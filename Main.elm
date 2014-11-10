@@ -1,4 +1,5 @@
-import String (toInt, split, show, trim, fromList)
+import Char
+import String (toInt, split, show, trim, fromList, append)
 import Graphics.Input (Input, input)
 import Graphics.Input.Field as Field
 import List (filterMap)
@@ -80,8 +81,12 @@ getNumInputs l = case l of
 -- solve takes a list of minterms, and a list of don't care terms
 -- it then combines them and converts them
 solve : [Minterm] -> [Minterm] -> String
-solve _ _ = "tmp"
-
+solve terms dontcares = let
+        rdcd = buildReducedImplicants <| mintermsToImplicants (terms ++ dontcares)
+        str = join " + " <| map implicantToLogicTerm rdcd
+    in case str of
+        "" -> "-"
+        otherwise -> str
 
 -- Converts a minterm to an Implicant
 --   The first parameter is the size of the implicant (the number of inputs)
@@ -111,6 +116,15 @@ implicantToMinterms' input (pow, terms) = let
         Just False -> (pow + 1, fal)
         Just True  -> (pow + 1, tru)
         Nothing    -> (pow + 1, both)
+
+implicantToLogicTerm : Implicant -> String
+implicantToLogicTerm impl = let
+        nextChar = Char.fromCode << (\x -> x+1) << Char.toCode
+        itlt d (i,c) = case d of
+            Nothing -> (i, nextChar c)
+            Just True -> (append i <| fromList [c], nextChar c)
+            Just False -> (append i <| fromList <| c::['\''], nextChar c)
+    in fst <| foldl itlt ("",'A') impl
 
 offByOne : Implicant -> Implicant -> Bool
 offByOne xs ys = let
